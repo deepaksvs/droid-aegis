@@ -17,7 +17,9 @@ public class Sockit {
 		// TODO Auto-generated constructor stub
 		mSoc = null;
 		try {
-			mSoc = new Socket(InetAddress.getByName(host), port);
+			InetAddress		addr = null;
+			addr = InetAddress.getByName(host);
+			mSoc = new Socket(addr, port);
 		} catch (UnknownHostException e) {
 			// TODO Auto-generated catch block
 			mSoc = null;

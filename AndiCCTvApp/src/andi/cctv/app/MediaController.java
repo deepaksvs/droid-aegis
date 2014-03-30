@@ -7,11 +7,12 @@ import android.annotation.TargetApi;
 import android.hardware.Camera;
 import android.hardware.Camera.CameraInfo;
 import android.media.MediaRecorder;
+import android.media.MediaRecorder.OnErrorListener;
 import android.os.Build;
 import android.util.Log;
 import android.view.SurfaceHolder;
 
-public class MediaController {
+public class MediaController implements OnErrorListener{
 	private static final int 	State_Unknown = 0;
 	private static final int	State_Ready   = 1;
 	private static final int	State_Play    = 2;
@@ -26,12 +27,36 @@ public class MediaController {
 	private Thread			mThread;
 	private SurfaceHolder	mSurfaceHolder;
 	private FileDescriptor	mFd;
+	private int				mWidth, mHeight;
 	
+	@Deprecated
 	public MediaController(SurfaceHolder  mHolder, FileDescriptor mFileD) {
 		mCurState = State_Unknown;
 		mSurfaceHolder = mHolder;
 		mFd = mFileD;
+		mWidth = 176;
+		mHeight = 144;
 		Log.d(mRecTag, "Creating thread: SurfaceHolder");
+		mThread = new ThreadHandler();
+		mThread.start();
+	}
+
+	public MediaController (SurfaceHolder mHolder) {
+		mCurState = State_Unknown;
+		mSurfaceHolder = mHolder;
+
+	}
+	
+	public void setFileDescriptor (FileDescriptor mFileDesc) {
+		mFd = mFileDesc;
+	}
+	
+	public void setPreviewSize (int width, int height) {
+		mWidth = width;
+		mHeight = height;
+	}
+	
+	public void startRec () {
 		mThread = new ThreadHandler();
 		mThread.start();
 	}
@@ -61,6 +86,7 @@ public class MediaController {
 		/* Try opening the main camera */
 		Log.d(mRecTag, "Trying BACK camera");
 		mCam = Camera.open(CameraInfo.CAMERA_FACING_BACK);
+//		mCam = Camera.open();
 		if (null == mCam) {
 			Log.d(mRecTag, "Trying FRONT Camera");
 			mCam = Camera.open(CameraInfo.CAMERA_FACING_FRONT);
@@ -69,7 +95,7 @@ public class MediaController {
 			Log.d(mRecTag, "Camera Open Success");
 //			CamcorderProfile  myProfile = CamcorderProfile.get(CameraInfo.CAMERA_FACING_BACK, CamcorderProfile.QUALITY_QCIF);
 			Camera.Parameters params = mCam.getParameters();
-			params.setPreviewSize(176, 144);
+			params.setPreviewSize(mWidth, mHeight);
 			mCam.setParameters(params);
 //			params.getPreviewSize();
 			Log.d(mRecTag, "Surface start");
@@ -180,6 +206,13 @@ public class MediaController {
 			}
 		}
 		
+	}
+
+	@Override
+	public void onError(MediaRecorder mr, int what, int extra) {
+		// TODO Auto-generated method stub
+		Log.d(mRecTag, "MediaRecorder OnError: " + what);
+		Log.d(mRecTag, "Extra " + extra);
 	}
 	
 }
