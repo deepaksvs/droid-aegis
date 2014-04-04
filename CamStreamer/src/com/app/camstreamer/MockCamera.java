@@ -1,16 +1,9 @@
 package com.app.camstreamer;
 
 import java.io.IOException;
-import java.util.Arrays;
-import java.util.List;
-
-import android.graphics.ImageFormat;
-import android.graphics.PixelFormat;
 import android.hardware.Camera;
 import android.hardware.Camera.ErrorCallback;
-import android.hardware.Camera.PictureCallback;
 import android.hardware.Camera.PreviewCallback;
-import android.hardware.Camera.Size;
 import android.util.Log;
 import android.view.SurfaceHolder;
 
@@ -65,9 +58,9 @@ public class MockCamera {
 		mParams.setPreviewFrameRate(15);
 		mCam.setParameters(mParams);
 		mParams = mCam.getParameters();
-//		mCam.setPreviewCallback(mPrevhandler);
+		mCam.setPreviewCallback(mPrevhandler);
 		mCam.startPreview();
-		Size sz = mParams.getPreviewSize();
+//		Size sz = mParams.getPreviewSize();
 //		Log.d(tag, "Preview Size w = " + sz.height + " h = " + sz.height);
 //		Log.d(tag, "BytesPerPixel = " + ImageFormat.getBitsPerPixel(mParams.getPreviewFormat()));
 //		Log.d(tag, "Preview format " + mParams.getPreviewFormat());
@@ -80,6 +73,8 @@ public class MockCamera {
 		mCam.release();
 	}
 	
+	//TODO: This is documented as not optimized for efficiency for preview and
+	// improved frame rate. Must move onto setPreviewCallbackWithBuffer
 	private class PreviewHandler implements PreviewCallback {
 
 		@Override
@@ -87,7 +82,6 @@ public class MockCamera {
 			// TODO Auto-generated method stub
 			Log.d(tag, "PreviewFrame received");
 		}
-		
 	}
 	
 	private class CameraErrors implements ErrorCallback {
