@@ -14,7 +14,7 @@ public class StreamSock {
 	public StreamSock () {
 		mSock = new Socket();
 	}
-	
+
 	public boolean connectSock (String host, int port) {
 		boolean				connected = false;
 		SocketAddress		mAddr = null;
