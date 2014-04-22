@@ -2,6 +2,7 @@ package com.app.camstreamer;
 
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
+
 import android.annotation.SuppressLint;
 import android.os.Handler;
 import android.os.Looper;
@@ -13,22 +14,42 @@ public class BufferHandler {
 	private	Looper					mDispatchLooper;
 	private BufferPool				mBuffPool;
 	private ArrayList<ByteBuffer> 	mDispatchQueue;
-	private int						mFrameSize;
-
+	private BufferNotifications		mNtf;
+	private DispatchThread			mThread;
+	
 	private static final int	BUFFER_WHATS = 0xdeadbeef;
 	private static final int 	FRAMES_CACHE = (30 * 1); // 30 fps for 2 secs
 	private static final String tag = "DispatchThread";
 
 	public BufferHandler () {
-		Log.d(tag, "New of Dispatch thread");
-		new DispatchThread();
+		mDispatchHandler = null;
 		mDispatchQueue = null;
+		mNtf = null;
+
+		mThread = new DispatchThread();
+		mThread.start();
+		synchronized (mThread) {
+			try {
+				mThread.wait();
+			} catch (InterruptedException e) {
+				e.printStackTrace();
+			}
+		}
+		Log.d(tag, "BufferHandler()");
+	}
+
+	public void registerBufferNotifier (BufferNotifications notifier) {
+		mNtf = notifier;
 	}
 
 	public void createBuffers (int size) {
-		mFrameSize = size;
+		Log.d(tag, "Create Buffers");
 		mBuffPool = new BufferPool(size, FRAMES_CACHE);
 		mDispatchQueue = new ArrayList<ByteBuffer>(FRAMES_CACHE);
+		if (mNtf != null) {
+			Log.d(tag, "Buffers created");
+			mNtf.onBuffersCreated();
+		}
 	}
 
 	private class DispatchThread extends Thread {
@@ -42,8 +63,7 @@ public class BufferHandler {
 			mDispatchHandler = new Handler() {
 				@Override
 				public void handleMessage(Message msg) {
-					Log.d(tag, "PreviewFrame dispatch");
-					// TODO Auto-generated method stub
+//					Log.d(tag, "PreviewFrame dispatch");
 					ByteBuffer mBuff = null;
 					synchronized (mDispatchQueue) {
 						mBuff = mDispatchQueue.remove(0);
@@ -51,12 +71,20 @@ public class BufferHandler {
 					if (mBuff != null) {
 						// copy the data
 						// push back the buffer
-						Log.d(tag, "Frame to Socket length " + mBuff.position());
+//						Log.d(tag, "Frame to Socket length " + mBuff.position());
+						
+						if (msg.arg2 != mBuff.position()) {
+							Log.d(tag, "msg Length " + msg.arg2 + " buffer " + mBuff.position());
+						}
 						mBuffPool.pushBack(mBuff);
 					}
 					super.handleMessage(msg);
 				}
 			};
+			Log.d(tag, "@" + mDispatchHandler);
+			synchronized (mThread) {
+				mThread.notifyAll();
+			}
 			Looper.loop();
 		}
 	}
@@ -91,11 +119,17 @@ public class BufferHandler {
 			// copy the data
 			mBuff.put(frameData, 0, frameData.length);
 			Message		msg = new Message();
+			msg.arg1 	= 
 			msg.what	= BUFFER_WHATS;
 			synchronized (mDispatchQueue) {
+				msg.arg1 	= mDispatchQueue.size() + 1;
+				msg.arg2	= frameData.length;
 				mDispatchQueue.add(mBuff);
 			}
 			mDispatchHandler.sendMessage(msg);
+		}
+		else {
+			Log.e(tag, "Dequeue failed");
 		}
 	}
 }

@@ -17,6 +17,7 @@ public class MockCamera {
 	private CameraErrors	mCamErr;
 	private PreviewHandler	mPrevhandler;
 	private BufferHandler	mBuff;
+	private BufferNtfHandler	mBuffNtf;
 
 	public MockCamera() {
 		// TODO Auto-generated constructor stub
@@ -25,6 +26,7 @@ public class MockCamera {
 		mCamErr = new CameraErrors();
 		mPrevhandler = new PreviewHandler();
 		mBuff		= new BufferHandler();
+		mBuffNtf	= new BufferNtfHandler();
 	}
 
 	public boolean initCamera () {
@@ -63,7 +65,7 @@ public class MockCamera {
 		mParams.setPreviewFrameRate(15);
 		mCam.setParameters(mParams);
 		mParams = mCam.getParameters();
-		mCam.setPreviewCallback(mPrevhandler);
+//		mCam.setPreviewCallback(mPrevhandler);
 //		mCam.startPreview();
 		Size size = mParams.getPreviewSize();
 		Log.d(tag, "Preview Size w = " + size.height + " h = " + size.height);
@@ -78,8 +80,9 @@ public class MockCamera {
 		 * total number of bits = (w * h) * 12 / 8;
 		 */
 		int previewSize = 460800;//((size.width * size.height * bpp) / 12);
+		mBuff.registerBufferNotifier(mBuffNtf);
 		mBuff.createBuffers(previewSize);
-		mCam.startPreview();
+//		mCam.startPreview();
 	}
 	
 	public void release () {
@@ -107,6 +110,23 @@ public class MockCamera {
 		public void onError(int error, Camera camera) {
 			// TODO Auto-generated method stub
 			Log.d(tag, "Camera onError " + error);
+		}
+		
+	}
+	
+	private class BufferNtfHandler implements BufferNotifications {
+
+		@Override
+		public void onBuffersCreated() {
+			Log.d(tag, "OnBuffersCreated Called. Start Preview");
+			mCam.setPreviewCallback(mPrevhandler);
+			mCam.startPreview();
+		}
+
+		@Override
+		public void onError(int error, int what) {
+			// TODO Auto-generated method stub
+			
 		}
 		
 	}
